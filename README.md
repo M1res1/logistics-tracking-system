@@ -1,253 +1,123 @@
 # logistics-tracking-system
 logistics-tracking-system web app
-# 🍔 Food Delivery Logistics System
 
-> A microservices backend for a food delivery platform — think Uber Eats, built in Go.
+# Food App — Infrastructure
 
-Built as a university project. Connects customers, restaurants, and delivery drivers through 5 independent Go services.
+Get a full local environment running in under 5 minutes.
 
----
+## Prerequisites
 
-## What It Does
-The Food Delivery Logistics System is a backend platform that connects customers, restaurants, and delivery drivers — similar to how Uber Eats or Bolt Food works under the hood. Customers can browse restaurant menus, place orders, and track their delivery driver's location in real time. Restaurants receive orders digitally, manage their menu, and control their kitchen flow by accepting or rejecting incoming orders. A delivery driver gets automatically assigned the moment the food is ready, and their GPS position is updated live so the customer always knows where their order is. The entire system is built in Go using a microservices architecture, with each core function — authentication, orders, delivery, restaurants, and payments — running as an independent service.
-
-A customer browses restaurants, places an order, pays, and tracks their driver in real time. The restaurant receives the order digitally, confirms it, and marks it ready. A driver gets auto-assigned, picks it up, and delivers it. All coordinated through this backend.
-
----
-
-## Services
-
-| Service | Port | What it does |
-|---|---|---|
-| **Auth** | `:8080` | Register, login, JWT tokens, role middleware |
-| **Order** | `:8081` | Create orders, state machine, status tracking |
-| **Delivery** | `:8082` | Assign drivers, GPS tracking, ETA calculation |
-| **Restaurant** | `:8083` | Menu management, accept/reject orders |
-| **Payment** | `:8084` | Process payments, wallet, refunds |
-
-All routes go through **Nginx** on `http://localhost/api/v1/...`
+- [Docker](https://docs.docker.com/get-docker/) ≥ 24
+- [Docker Compose](https://docs.docker.com/compose/) ≥ 2.20
+- [Go](https://go.dev/dl/) ≥ 1.22 (for running tests locally)
+- Make
 
 ---
 
-## Tech Stack
-
-- **Go 1.21+** — all services
-- **Gin** — HTTP router
-- **GORM** — ORM / database access
-- **PostgreSQL** — primary database
-- **Redis** — token blacklist, caching, idempotency keys
-- **Kafka** — async events between services
-- **Docker + Compose** — local infrastructure
-- **Nginx** — reverse proxy / API gateway
-- **GitHub Actions** — CI on every PR
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- [Docker](https://www.docker.com/) & Docker Compose
-- [Go 1.21+](https://go.dev/dl/)
-- Git
-
-### Run locally
+## Quick Start
 
 ```bash
-# 1. Clone the repo
-git clone https://github.com/your-team/food-delivery.git
-cd food-delivery
+# 1. Clone
+git clone https://github.com/your-org/food-app.git
+cd food-app
 
-# 2. Set up environment
+# 2. Configure environment
 cp .env.example .env
+# Edit .env if needed — defaults work out of the box for local dev
 
-# 3. Start infrastructure (Postgres, Redis, Kafka)
+# 3. Boot infrastructure (postgres, redis, kafka)
 make up
 
-# 4. Run database migrations
+# 4. Run migrations
 make migrate
 
-# 5. Start all services
-make run-all
+# 5. Start everything (app services + nginx + observability)
+docker compose up -d
 ```
 
-All APIs are now available at `http://localhost/api/v1/`
+App is now available at **http://localhost**.
+
+---
+
+## Services & Ports
+
+| Service       | Port  | Path prefix        |
+|---------------|-------|--------------------|
+| Auth          | 8080  | `/api/v1/auth/*`   |
+| Orders        | 8081  | `/orders/*`        |
+| Deliveries    | 8082  | `/deliveries/*`    |
+| Restaurants   | 8083  | `/restaurants/*`   |
+| Payments      | 8084  | `/payments/*`      |
+| Nginx (entry) | 80    | all of the above   |
+| Prometheus    | 9090  | —                  |
+| Grafana       | 3000  | — (admin/admin)    |
 
 ---
 
 ## Makefile Commands
 
-```bash
-make up          # start postgres, redis, kafka
-make down        # stop all containers
-make migrate     # run SQL migrations
-make run-all     # start all 5 Go services
-make test        # run all tests
-make build-all   # compile all services to /bin
-```
+| Command        | Description                              |
+|----------------|------------------------------------------|
+| `make up`      | Start postgres, redis, kafka             |
+| `make down`    | Stop and remove all containers           |
+| `make migrate` | Run SQL migrations in `./migrations/`    |
+| `make test`    | Run all Go tests                         |
+| `make logs`    | Tail all logs (`s=auth` to filter)       |
+| `make ps`      | Show running containers                  |
 
 ---
 
 ## Project Structure
 
 ```
-food-delivery/
-│
-├── pkg/                        # shared code imported by all services
-│   ├── middleware/auth.go      # JWT validation middleware
-│   ├── response/response.go    # standard JSON response helpers
-│   ├── config/config.go        # load .env into Config struct
-│   ├── database/postgres.go    # open DB connection
-│   └── kafka/                  # producer & consumer helpers
-│
-├── services/
-│   ├── auth/                   # :8080
-│   ├── order/                  # :8081
-│   ├── delivery/               # :8082
-│   ├── restaurant/             # :8083
-│   └── payment/                # :8084
-│
-├── migrations/                 # versioned SQL files
-│   ├── 001_users.sql
-│   ├── 002_restaurants.sql
-│   ├── 003_menu_items.sql
-│   ├── 004_orders.sql
-│   ├── 005_order_items.sql
-│   ├── 006_deliveries.sql
-│   └── 007_payments.sql
-│
-├── docker-compose.yml
-├── .env.example
-├── Makefile
-└── README.md
-```
-
-Each service follows the same internal layout:
-
-```
-services/order/
-├── main.go
-├── handler/
-├── service/
-├── repository/
-└── model/
+.
+├── docker-compose.yml       # All services
+├── Dockerfile               # Multi-stage Go build (shared template)
+├── .env.example             # Environment variable reference
+├── Makefile                 # Dev shortcuts
+├── nginx/
+│   └── nginx.conf           # Path-based routing
+├── prometheus/
+│   └── prometheus.yml       # Scrape config
+├── grafana/
+│   └── provisioning/        # Auto-loaded datasource + dashboard
+├── migrations/              # SQL files, applied in sort order
+└── services/
+    ├── auth/cmd/main.go
+    ├── orders/cmd/main.go
+    ├── deliveries/cmd/main.go
+    ├── restaurants/cmd/main.go
+    └── payments/cmd/main.go
 ```
 
 ---
 
-## API Overview
+## Adding a Migration
 
-### Auth
-```
-POST   /api/v1/auth/register
-POST   /api/v1/auth/login
-POST   /api/v1/auth/logout
-POST   /api/v1/auth/refresh-token
-GET    /api/v1/auth/me
-```
+Drop a `.sql` file into `./migrations/` with a numeric prefix and run `make migrate`:
 
-### Orders
 ```
-POST   /api/v1/orders
-GET    /api/v1/orders/:id
-GET    /api/v1/orders/my
-POST   /api/v1/orders/:id/cancel
+migrations/
+  001_create_users.sql
+  002_create_orders.sql
 ```
 
-### Delivery
-```
-POST   /api/v1/deliveries/assign
-POST   /api/v1/deliveries/:id/accept
-POST   /api/v1/deliveries/:id/pickup
-POST   /api/v1/deliveries/:id/complete
-PUT    /api/v1/deliveries/:id/location
-GET    /api/v1/deliveries/:id/location
-```
-
-### Restaurants
-```
-GET    /api/v1/restaurants
-POST   /api/v1/restaurants
-GET    /api/v1/restaurants/:id/menu
-POST   /api/v1/restaurants/:id/menu-items
-PUT    /api/v1/restaurants/:id/toggle
-POST   /api/v1/restaurants/:id/orders/:orderId/accept
-POST   /api/v1/restaurants/:id/orders/:orderId/ready
-POST   /api/v1/restaurants/:id/orders/:orderId/reject
-```
-
-### Payments
-```
-POST   /api/v1/payments/process
-GET    /api/v1/payments/:id
-POST   /api/v1/payments/:id/refund
-GET    /api/v1/wallet/:userId
-POST   /api/v1/wallet/:userId/topup
-```
+Migrations are applied in alphabetical order. They are **not** tracked automatically — for a real project, use [golang-migrate](https://github.com/golang-migrate/migrate).
 
 ---
 
-## Order Status Flow
+## Observability
 
-```
-PENDING → CONFIRMED → PREPARING → READY → ASSIGNED → IN_TRANSIT → DELIVERED
-                                                  ↓
-                                             CANCELLED
-```
+Grafana ships with a pre-built **App Overview** dashboard:
+- Requests / sec per service
+- 5xx error rate
+- p95 latency
+- Total request volume
 
----
-
-## Environment Variables
-
-Copy `.env.example` to `.env` and fill in:
-
-```env
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=fooddelivery
-DB_USER=admin
-DB_PASS=secret
-
-REDIS_URL=localhost:6379
-
-KAFKA_BROKERS=localhost:9092
-
-JWT_SECRET=your-secret-key-here
-
-AUTH_PORT=8080
-ORDER_PORT=8081
-DELIVERY_PORT=8082
-RESTAURANT_PORT=8083
-PAYMENT_PORT=8084
-```
+Open **http://localhost:3000** → login `admin` / `admin` (or the password in your `.env`).
 
 ---
 
-## Team
+## CI
 
-| Developer | Service | 
-|---|---|
-| Dev 1 | Auth Service |
-| Dev 2 | Order Service |
-| Dev 3 | Delivery Service |
-| Dev 4 | Restaurant Service |
-| Dev 5 | Payment Service + shared `pkg/` |
-| DevOps | Docker, Nginx, CI/CD, Makefile |
-
-> **Note for the team:** Dev 5 sets up `pkg/` and Docker Compose on Day 1. Dev 1 finishes the auth middleware before others protect their routes. These two tasks block everyone else.
-
----
-
-## Running Tests
-
-```bash
-# all services
-make test
-
-# single service
-cd services/order && go test ./...
-```
-
----
-
-*University Project · Go · May 2026*
+Every PR runs `go build ./...` and `go test ./...` via GitHub Actions (`.github/workflows/ci.yml`). Broken builds are blocked from merging.
