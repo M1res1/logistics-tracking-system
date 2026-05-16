@@ -32,6 +32,7 @@ func main() {
 	repo := repository.NewDeliveryRepository(db)
 	svc := service.NewDeliveryService(db, repo)
 	dh := handler.NewDeliveryHandler(svc)
+	th := handler.NewTrackingHandler(svc)
 
 	r := gin.New()
 	r.Use(middleware.Logger())
@@ -43,6 +44,9 @@ func main() {
 		api.POST("/deliveries/:id/accept", dh.Accept)
 		api.POST("/deliveries/:id/pickup", dh.Pickup)
 		api.POST("/deliveries/:id/complete", dh.Complete)
+		api.PUT("/deliveries/:id/location", th.UpdateLocation)
+		api.GET("/deliveries/:id/location", th.GetLocation)
+		api.GET("/drivers/available", th.AvailableDrivers)
 	}
 
 	if err := r.Run(":8082"); err != nil {
