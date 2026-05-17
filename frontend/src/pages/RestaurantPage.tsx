@@ -51,19 +51,17 @@ export default function RestaurantPage() {
   const [actingOrder, setActingOrder] = useState<number | null>(null)
   const [orderMsg, setOrderMsg] = useState('')
 
-  // Load restaurant on mount
+  // Load restaurant on mount — filter by owner_id
   useEffect(() => {
     restaurantsApi.listRestaurants()
       .then((res) => {
-        const list = res.data.data || []
-        // The owner's restaurant (simple heuristic: first result; in real app filter by owner)
-        if (list.length > 0) {
-          setRestaurant(list[0])
-        }
+        const list = res.data.data?.restaurants || []
+        const owned = list.find((r) => r.owner_id === user?.id) || null
+        setRestaurant(owned)
       })
       .catch(() => {})
       .finally(() => setRestLoading(false))
-  }, [])
+  }, [user?.id])
 
   // Load menu when tab changes
   useEffect(() => {
@@ -107,7 +105,7 @@ export default function RestaurantPage() {
         address: form.address,
         lat: parseFloat(form.lat) || 0,
         lng: parseFloat(form.lng) || 0,
-        cuisine_types: form.cuisine_types.split(',').map((s) => s.trim()).filter(Boolean),
+        cuisine_types: form.cuisine_types,
         opening_time: form.opening_time,
         closing_time: form.closing_time,
       })
@@ -131,7 +129,7 @@ export default function RestaurantPage() {
         address: form.address,
         lat: parseFloat(form.lat) || 0,
         lng: parseFloat(form.lng) || 0,
-        cuisine_types: form.cuisine_types.split(',').map((s) => s.trim()).filter(Boolean),
+        cuisine_types: form.cuisine_types,
         opening_time: form.opening_time,
         closing_time: form.closing_time,
       })
@@ -152,7 +150,7 @@ export default function RestaurantPage() {
       address: restaurant.address,
       lat: String(restaurant.lat),
       lng: String(restaurant.lng),
-      cuisine_types: (restaurant.cuisine_types || []).join(', '),
+      cuisine_types: restaurant.cuisine_types || '',
       opening_time: restaurant.opening_time,
       closing_time: restaurant.closing_time,
     })
@@ -279,7 +277,7 @@ export default function RestaurantPage() {
                 </div>
                 <div className="text-sm text-muted mb-1">{restaurant.address}</div>
                 {restaurant.cuisine_types && (
-                  <div className="text-sm text-muted mb-1">Cuisines: {restaurant.cuisine_types.join(', ')}</div>
+                  <div className="text-sm text-muted mb-1">Cuisines: {restaurant.cuisine_types}</div>
                 )}
                 <div className="text-sm text-muted mb-3">
                   Hours: {restaurant.opening_time} – {restaurant.closing_time}
@@ -410,8 +408,8 @@ export default function RestaurantPage() {
                       {order.delivery_address && (
                         <div className="text-sm text-muted">{order.delivery_address}</div>
                       )}
-                      {order.total_amount != null && (
-                        <div className="text-sm mt-1"><strong>${order.total_amount.toFixed(2)}</strong></div>
+                      {order.total != null && (
+                        <div className="text-sm mt-1"><strong>${order.total?.toFixed(2)}</strong></div>
                       )}
                     </div>
                     <div className="order-actions">

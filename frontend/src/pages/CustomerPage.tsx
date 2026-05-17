@@ -229,7 +229,7 @@ export default function CustomerPage() {
     if (tab === 'restaurants') {
       setRestLoading(true)
       restaurantsApi.listRestaurants()
-        .then((res) => setRestaurants(res.data.data || []))
+        .then((res) => setRestaurants(res.data.data?.restaurants || []))
         .catch(() => {})
         .finally(() => setRestLoading(false))
     }
@@ -241,7 +241,7 @@ export default function CustomerPage() {
   const loadOrders = () => {
     setOrdersLoading(true)
     ordersApi.myOrders()
-      .then((res) => setOrders(res.data.data || []))
+      .then((res) => setOrders(res.data.data?.orders || []))
       .catch(() => {})
       .finally(() => setOrdersLoading(false))
   }
@@ -321,7 +321,7 @@ export default function CustomerPage() {
                     <div className="restaurant-name">{r.name}</div>
                     <div className="restaurant-meta">{r.address}</div>
                     {r.cuisine_types && (
-                      <div className="restaurant-meta">{r.cuisine_types.join(', ')}</div>
+                      <div className="restaurant-meta">{r.cuisine_types}</div>
                     )}
                     <div className="flex-gap mt-2">
                       <span className={r.is_active ? 'badge badge-active' : 'badge badge-danger'}>
@@ -361,7 +361,7 @@ export default function CustomerPage() {
                         <div className="text-sm text-muted">{order.delivery_address}</div>
                       )}
                       <div className="text-sm mt-1">
-                        <strong>${order.total_amount?.toFixed(2)}</strong>
+                        <strong>${order.total?.toFixed(2)}</strong>
                         {order.items && <span className="text-muted"> · {order.items.length} items</span>}
                       </div>
                     </div>

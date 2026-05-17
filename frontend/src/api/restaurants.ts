@@ -2,11 +2,12 @@ import client from './client'
 
 export interface Restaurant {
   id: number
+  owner_id: number
   name: string
   address: string
   lat: number
   lng: number
-  cuisine_types: string[]
+  cuisine_types: string   // stored as string in backend
   opening_time: string
   closing_time: string
   is_active: boolean
@@ -25,14 +26,14 @@ export interface MenuItem {
 export interface RestaurantOrder {
   id: number
   status: string
-  total_amount?: number
+  total?: number
   items?: { menu_item_id: number; quantity: number; unit_price: number }[]
   delivery_address?: string
   created_at?: string
 }
 
 export const listRestaurants = (params?: { lat?: number; lng?: number; radius?: number }) =>
-  client.get<{ data: Restaurant[] }>('/restaurants', { params })
+  client.get<{ data: { restaurants: Restaurant[]; total: number } }>('/restaurants', { params })
 
 export const getRestaurant = (id: number) =>
   client.get<{ data: Restaurant }>(`/restaurants/${id}`)
@@ -45,7 +46,7 @@ export const createRestaurant = (data: {
   address: string
   lat: number
   lng: number
-  cuisine_types: string[]
+  cuisine_types: string
   opening_time: string
   closing_time: string
 }) => client.post<{ data: Restaurant }>('/restaurants', data)
@@ -55,7 +56,7 @@ export const updateRestaurant = (id: number, data: Partial<{
   address: string
   lat: number
   lng: number
-  cuisine_types: string[]
+  cuisine_types: string
   opening_time: string
   closing_time: string
 }>) => client.put<{ data: Restaurant }>(`/restaurants/${id}`, data)

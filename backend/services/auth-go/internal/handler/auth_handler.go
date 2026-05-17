@@ -3,17 +3,20 @@ package handler
 import (
 	"auth-go/internal/dto"
 	"auth-go/internal/service"
+	"auth-go/internal/util"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
 type AuthHandler struct {
 	authService service.AuthService
+	jwtUtil     *util.JwtUtil
 }
 
-func NewAuthHandler(authService service.AuthService) *AuthHandler {
-	return &AuthHandler{authService: authService}
+func NewAuthHandler(authService service.AuthService, jwtUtil *util.JwtUtil) *AuthHandler {
+	return &AuthHandler{authService: authService, jwtUtil: jwtUtil}
 }
 
 func (h *AuthHandler) Register(c *gin.Context) {
@@ -75,45 +78,17 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 }
 
 func (h *AuthHandler) Me(c *gin.Context) {
-	// Use the helper from pkg/middleware/auth.go if possible, 
-	// but here we just need the email from context.
-	userVal, exists := c.Get("user")
-	if !exists {
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
-	// Based on pkg/middleware/auth.go, the user in context is a User struct
-	// Since we are in a different module, we might have issues with type assertion 
-	// if we don't import the package. For now, let's use a simple approach.
-	
-	var email string
-	// Attempt to get email via reflection or if we know the structure
-	// Given it's a shared pkg, we should ideally import it.
-	// However, to keep it simple and avoid circular deps or complex imports:
-	
-	// If the middleware is from backend/pkg/middleware, we can try to use it.
-	// For now, let's assume the email is available in claims or we can cast it if we import it.
-	
-	// Let's assume we'll fix the import in the next step if needed.
-	// For the sake of completion:
-	type contextUser struct {
-		ID       float64
-		Email    string
-		UserType string
-	}
-	
-	if u, ok := userVal.(contextUser); ok {
-		email = u.Email
-	} else {
-		// Try to extract from map if it was stored as map
-		if m, ok := userVal.(map[string]interface{}); ok {
-			email = m["sub"].(string)
-		} else {
-			// Fallback: we might need to properly import the middleware package
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user context"})
-			return
-		}
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+	email, err := h.jwtUtil.ExtractUsername(token)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+		return
 	}
 
 	resp, err := h.authService.GetCurrentUser(email)
@@ -122,5 +97,5 @@ func (h *AuthHandler) Me(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, resp)
+	c.JSON(http.StatusOK, gin.H{"data": resp})
 }
