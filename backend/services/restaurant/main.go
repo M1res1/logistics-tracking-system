@@ -29,7 +29,7 @@ func main() {
 
 	repo := repository.NewRestaurantRepository(db)
 	svc := service.NewRestaurantService(repo)
-	rh := handler.NewRestaurantHandler(svc)
+	rh := handler.NewRestaurantHandler(svc, db)
 	mh := handler.NewMenuHandler(svc)
 
 	r := gin.New()

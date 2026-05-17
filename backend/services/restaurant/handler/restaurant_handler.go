@@ -3,12 +3,14 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"logistics-tracking-system/pkg/middleware"
 	"logistics-tracking-system/pkg/response"
 	"logistics-tracking-system/services/restaurant/service"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func getOwnerID(c *gin.Context) uint {
@@ -25,10 +27,11 @@ func getOwnerID(c *gin.Context) uint {
 
 type RestaurantHandler struct {
 	svc *service.RestaurantService
+	db  *gorm.DB
 }
 
-func NewRestaurantHandler(svc *service.RestaurantService) *RestaurantHandler {
-	return &RestaurantHandler{svc: svc}
+func NewRestaurantHandler(svc *service.RestaurantService, db *gorm.DB) *RestaurantHandler {
+	return &RestaurantHandler{svc: svc, db: db}
 }
 
 func (h *RestaurantHandler) Create(c *gin.Context) {
@@ -127,17 +130,53 @@ func (h *RestaurantHandler) Toggle(c *gin.Context) {
 }
 
 func (h *RestaurantHandler) ListOrders(c *gin.Context) {
-	response.Success(c, []struct{}{})
+	restaurantID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "invalid id")
+		return
+	}
+	type OrderRow struct {
+		ID              uint      `json:"id"`
+		CustomerID      uint      `json:"customer_id"`
+		Status          string    `json:"status"`
+		Total           float64   `json:"total"`
+		DeliveryAddress string    `json:"delivery_address"`
+		CreatedAt       time.Time `json:"created_at"`
+	}
+	var orders []OrderRow
+	if err := h.db.Table("orders").
+		Where("restaurant_id = ?", restaurantID).
+		Order("created_at DESC").
+		Find(&orders).Error; err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	response.Success(c, orders)
 }
 
 func (h *RestaurantHandler) AcceptOrder(c *gin.Context) {
+	orderID, _ := strconv.ParseUint(c.Param("orderId"), 10, 64)
+	if err := h.db.Table("orders").Where("id = ?", orderID).Update("status", "CONFIRMED").Error; err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
 	response.Success(c, gin.H{"status": "CONFIRMED"})
 }
 
 func (h *RestaurantHandler) ReadyOrder(c *gin.Context) {
+	orderID, _ := strconv.ParseUint(c.Param("orderId"), 10, 64)
+	if err := h.db.Table("orders").Where("id = ?", orderID).Update("status", "READY").Error; err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
 	response.Success(c, gin.H{"status": "READY"})
 }
 
 func (h *RestaurantHandler) RejectOrder(c *gin.Context) {
+	orderID, _ := strconv.ParseUint(c.Param("orderId"), 10, 64)
+	if err := h.db.Table("orders").Where("id = ?", orderID).Update("status", "CANCELLED").Error; err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
 	response.Success(c, gin.H{"status": "CANCELLED"})
 }
