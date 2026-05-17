@@ -11,9 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// getOwnerID retrieves the authenticated user's ID from the gin context.
-// It first checks the middleware.User struct set by Auth middleware, then falls
-// back to the X-Owner-ID header (useful for development / stub auth), then 0.
 func getOwnerID(c *gin.Context) uint {
 	if user, ok := middleware.GetUserFromCtx(c); ok {
 		return user.ID
@@ -54,7 +51,7 @@ func (h *RestaurantHandler) List(c *gin.Context) {
 	lng, _ := strconv.ParseFloat(c.Query("lng"), 64)
 	radius, _ := strconv.ParseFloat(c.Query("radius"), 64)
 	if radius == 0 {
-		radius = 10 // default 10 km
+		radius = 10
 	}
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
@@ -64,7 +61,6 @@ func (h *RestaurantHandler) List(c *gin.Context) {
 	if limit < 1 || limit > 100 {
 		limit = 20
 	}
-
 	restaurants, total, err := h.svc.ListRestaurants(lat, lng, radius, page, limit)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
@@ -129,8 +125,6 @@ func (h *RestaurantHandler) Toggle(c *gin.Context) {
 	}
 	response.Success(c, r)
 }
-
-// Kitchen order stubs — full implementation requires integration with the order service.
 
 func (h *RestaurantHandler) ListOrders(c *gin.Context) {
 	response.Success(c, []struct{}{})
