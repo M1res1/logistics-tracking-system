@@ -8,24 +8,41 @@ on:
 
 jobs:
   build-and-test:
-    name: Build & Test
+    name: Build & Test (main module)
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        working-directory: backend
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version-file: backend/go.mod
           cache: true
-
+          cache-dependency-path: backend/go.sum
       - name: Verify dependencies
         run: go mod verify
-
       - name: Build all services
         run: go build ./...
-
       - name: Run tests
+        run: go test -v -race -count=1 ./...
+
+  build-and-test-auth:
+    name: Build & Test (auth-go module)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/services/auth-go
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/services/auth-go/go.mod
+          cache: true
+          cache-dependency-path: backend/services/auth-go/go.sum
+      - name: Verify dependencies
+        run: go mod verify
+      - name: Build auth service
+        run: go build ./...
+      - name: Run auth tests
         run: go test -v -race -count=1 ./...
