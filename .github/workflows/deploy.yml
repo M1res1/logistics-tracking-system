@@ -1,0 +1,93 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: ["main"]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/m1res1/logistics-tracking-system
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.CR_PAT }}
+
+      - name: Build and push auth
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/services/auth-go
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-auth:latest
+
+      - name: Build and push orders
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          build-args: SERVICE=order
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-orders:latest
+
+      - name: Build and push deliveries
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          build-args: SERVICE=delivery
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-deliveries:latest
+
+      - name: Build and push restaurants
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          build-args: SERVICE=restaurant
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-restaurants:latest
+
+      - name: Build and push payments
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          build-args: SERVICE=payment
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-payments:latest
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-frontend:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Droplet
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            cd /root/logistics-tracking-system
+            git pull origin main
+            echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u m1res1 --password-stdin
+            docker compose pull
+            docker compose up -d
+            make migrate
