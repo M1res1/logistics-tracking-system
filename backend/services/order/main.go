@@ -7,7 +7,6 @@ import (
 	"logistics-tracking-system/pkg/database"
 	"logistics-tracking-system/pkg/middleware"
 	"logistics-tracking-system/services/order/handler"
-	"logistics-tracking-system/services/order/model"
 	"logistics-tracking-system/services/order/repository"
 	"logistics-tracking-system/services/order/service"
 
@@ -23,10 +22,6 @@ func main() {
 
 	db, err := database.ConnectPostgres(cfg)
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	if err := database.AutoMigrate(db, &model.Order{}, &model.OrderItem{}); err != nil {
 		log.Fatal(err)
 	}
 

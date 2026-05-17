@@ -7,7 +7,6 @@ import (
 	"logistics-tracking-system/pkg/database"
 	"logistics-tracking-system/pkg/middleware"
 	"logistics-tracking-system/services/restaurant/handler"
-	"logistics-tracking-system/services/restaurant/model"
 	"logistics-tracking-system/services/restaurant/repository"
 	"logistics-tracking-system/services/restaurant/service"
 
@@ -22,10 +21,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := database.AutoMigrate(db, &model.Restaurant{}, &model.MenuItem{}); err != nil {
-		log.Fatal(err)
-	}
-
 	redisOpts, err := redis.ParseURL(cfg.RedisURL)
 	if err != nil {
 		log.Fatalf("invalid REDIS_URL: %v", err)
