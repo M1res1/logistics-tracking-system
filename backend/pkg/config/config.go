@@ -11,6 +11,7 @@ type Config struct {
 	DBSSLMode  string
 	RedisURL   string
 	Port       string
+	JWTSecret  string
 }
 
 func LoadConfig() (*Config, error) {
@@ -23,6 +24,7 @@ func LoadConfig() (*Config, error) {
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
 		RedisURL:   getEnv("REDIS_URL", "redis://localhost:6379"),
 		Port:       getEnv("PORT", "8082"),
+		JWTSecret:  getEnv("JWT_SECRET", "supersecretkey"),
 	}, nil
 }
 

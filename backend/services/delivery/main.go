@@ -12,6 +12,7 @@ import (
 	"logistics-tracking-system/services/delivery/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -29,6 +30,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	redisOpts, err := redis.ParseURL(cfg.RedisURL)
+	if err != nil {
+		log.Fatalf("invalid REDIS_URL: %v", err)
+	}
+	redisClient := redis.NewClient(redisOpts)
+
 	repo := repository.NewDeliveryRepository(db)
 	svc := service.NewDeliveryService(db, repo)
 	dh := handler.NewDeliveryHandler(svc)
@@ -39,14 +46,20 @@ func main() {
 	r.Use(gin.Recovery())
 
 	api := r.Group("/api/v1")
+
+	// Internal route — no auth required
+	api.POST("/deliveries/assign", dh.Assign)
+
+	// Auth-protected routes
+	protected := api.Group("")
+	protected.Use(middleware.Auth(redisClient))
 	{
-		api.POST("/deliveries/assign", dh.Assign)
-		api.POST("/deliveries/:id/accept", dh.Accept)
-		api.POST("/deliveries/:id/pickup", dh.Pickup)
-		api.POST("/deliveries/:id/complete", dh.Complete)
-		api.PUT("/deliveries/:id/location", th.UpdateLocation)
-		api.GET("/deliveries/:id/location", th.GetLocation)
-		api.GET("/drivers/available", th.AvailableDrivers)
+		protected.POST("/deliveries/:id/accept", dh.Accept)
+		protected.POST("/deliveries/:id/pickup", dh.Pickup)
+		protected.POST("/deliveries/:id/complete", dh.Complete)
+		protected.PUT("/deliveries/:id/location", th.UpdateLocation)
+		protected.GET("/deliveries/:id/location", th.GetLocation)
+		protected.GET("/drivers/available", th.AvailableDrivers)
 	}
 
 	if err := r.Run(":8082"); err != nil {
