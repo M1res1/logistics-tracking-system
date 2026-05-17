@@ -10,7 +10,7 @@ export interface Order {
   id: number
   restaurant_id: number
   status: string
-  total_amount: number
+  total: number
   delivery_address: string
   lat: number
   lng: number
@@ -30,7 +30,7 @@ export const createOrder = (data: CreateOrderData) =>
   client.post<{ data: Order }>('/orders', data)
 
 export const myOrders = () =>
-  client.get<{ data: Order[] }>('/orders/my')
+  client.get<{ data: { orders: Order[]; total: number; page: number; limit: number } }>('/orders/my')
 
 export const getOrder = (id: number) =>
   client.get<{ data: Order }>(`/orders/${id}`)

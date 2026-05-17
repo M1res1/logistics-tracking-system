@@ -3,7 +3,7 @@ package dto
 type RegisterRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=8"`
-	Phone    string `json:"phone" binding:"omitempty,pattern=^\\+?[0-9]{10,15}$"`
+	Phone    string `json:"phone" binding:"omitempty"`
 	UserType string `json:"user_type" binding:"required,oneof=CUSTOMER DRIVER ADMIN RESTAURANT"`
 }
 

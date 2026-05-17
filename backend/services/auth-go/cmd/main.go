@@ -58,7 +58,7 @@ func main() {
 	authService := service.NewAuthService(userRepo, sessionRepo, jwtUtil, rdb)
 
 	// Handlers
-	authHandler := handler.NewAuthHandler(authService)
+	authHandler := handler.NewAuthHandler(authService, jwtUtil)
 
 	// Router
 	r := gin.New()
