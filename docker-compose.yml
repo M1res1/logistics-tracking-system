@@ -71,9 +71,7 @@ services:
   # ── Application services ────────────────────────────────────────────────────
   auth:
     <<: *backend-common
-    build:
-      context: ./backend/services/auth-go
-      dockerfile: Dockerfile
+    image: ghcr.io/m1res1/logistics-tracking-system-auth:latest
     environment:
       PORT: "8080"
       DB_URL: "host=postgres user=${DB_USER:-app} password=${DB_PASSWORD:-secret} dbname=${DB_NAME:-foodapp} port=5432 sslmode=disable"
@@ -83,11 +81,7 @@ services:
 
   orders:
     <<: *backend-common
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      args:
-        SERVICE: order
+    image: ghcr.io/m1res1/logistics-tracking-system-orders:latest
     environment:
       PORT: "8081"
       DB_HOST: postgres
@@ -101,11 +95,7 @@ services:
 
   deliveries:
     <<: *backend-common
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      args:
-        SERVICE: delivery
+    image: ghcr.io/m1res1/logistics-tracking-system-deliveries:latest
     environment:
       PORT: "8082"
       DB_HOST: postgres
@@ -119,11 +109,7 @@ services:
 
   restaurants:
     <<: *backend-common
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      args:
-        SERVICE: restaurant
+    image: ghcr.io/m1res1/logistics-tracking-system-restaurants:latest
     environment:
       PORT: "8083"
       DB_HOST: postgres
@@ -137,11 +123,7 @@ services:
 
   payments:
     <<: *backend-common
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      args:
-        SERVICE: payment
+    image: ghcr.io/m1res1/logistics-tracking-system-payments:latest
     environment:
       PORT: "8084"
       DB_HOST: postgres
@@ -155,9 +137,7 @@ services:
 
   # ── Frontend ─────────────────────────────────────────────────────────────────
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: ghcr.io/m1res1/logistics-tracking-system-frontend:latest
     restart: unless-stopped
     ports:
       - "${FRONTEND_PORT:-3000}:80"
