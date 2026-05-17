@@ -42,6 +42,7 @@ func main() {
 	th := handler.NewTrackingHandler(svc)
 
 	r := gin.New()
+	r.Use(middleware.CORS())
 	r.Use(middleware.Logger())
 	r.Use(gin.Recovery())
 

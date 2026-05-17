@@ -35,3 +35,8 @@ out/
 
 ### VS Code ###
 .vscode/
+frontend/node_modules/
+frontend/dist/
+.claude/
+go.work
+go.work.sum

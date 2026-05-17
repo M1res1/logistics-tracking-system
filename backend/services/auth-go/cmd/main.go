@@ -17,6 +17,19 @@ import (
 	"gorm.io/gorm"
 )
 
+func corsMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Authorization, Content-Type")
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+		c.Next()
+	}
+}
+
 func main() {
 	cfg := config.Load()
 
@@ -48,7 +61,10 @@ func main() {
 	authHandler := handler.NewAuthHandler(authService)
 
 	// Router
-	r := gin.Default()
+	r := gin.New()
+	r.Use(corsMiddleware())
+	r.Use(gin.Logger())
+	r.Use(gin.Recovery())
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {
@@ -62,15 +78,7 @@ func main() {
 		v1.POST("/login", authHandler.Login)
 		v1.POST("/logout", authHandler.Logout)
 		v1.POST("/refresh-token", authHandler.RefreshToken)
-	}
-
-	// Protected routes
-	protected := r.Group("/api/v1/auth")
-	// Use local copy of middleware if needed, or import from pkg
-	// For now, let's keep it simple.
-	// protected.Use(middleware.AuthMiddleware(cfg.JWTSecret, rdb))
-	{
-		protected.GET("/me", authHandler.Me)
+		v1.GET("/me", authHandler.Me)
 	}
 
 	log.Printf("Starting server on port %s", cfg.Port)
