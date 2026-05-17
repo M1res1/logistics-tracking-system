@@ -38,6 +38,7 @@ func main() {
 	mh := handler.NewMenuHandler(svc)
 
 	r := gin.New()
+	r.Use(middleware.CORS())
 	r.Use(middleware.Logger())
 	r.Use(gin.Recovery())
 
