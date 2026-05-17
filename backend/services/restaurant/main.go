@@ -17,11 +17,14 @@ import (
 
 func main() {
 	cfg, _ := config.LoadConfig()
+
 	db, err := database.ConnectPostgres(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-	database.AutoMigrate(db, &model.Restaurant{}, &model.MenuItem{})
+	if err := database.AutoMigrate(db, &model.Restaurant{}, &model.MenuItem{}); err != nil {
+		log.Fatal(err)
+	}
 
 	redisOpts, err := redis.ParseURL(cfg.RedisURL)
 	if err != nil {
@@ -58,5 +61,7 @@ func main() {
 		api.DELETE("/restaurants/:id/menu-items/:itemId", mh.DeleteItem)
 	}
 
-	r.Run(":8083")
+	if err := r.Run(":8083"); err != nil {
+		log.Fatal(err)
+	}
 }
